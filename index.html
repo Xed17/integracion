@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Estimación de tráfico de red acumulado mediante la Regla del Trapecio Compuesto. Métodos Numéricos con análisis de convergencia y errores con KaTeX.">
+  <title>Tráfico de Red · Estimación mediante Trapecio Compuesto</title>
+  
+  <!-- Estilos principales -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- KaTeX para renderizado matemático tipográfico de alta precisión -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div class="container">
+    <!-- Encabezado Académico -->
+    <header class="app-header">
+      <span class="badge-course">Métodos Numéricos · Integración Numérica</span>
+      <h1 class="app-title">Tráfico de Red</h1>
+      <p class="app-subtitle">Estimación del volumen total de datos transferidos mediante la Regla del Trapecio Compuesto</p>
+    </header>
+
+    <main>
+      <!-- Tarjeta 1: Planteamiento del Problema -->
+      <section class="card problem-card" aria-label="Planteamiento del problema">
+        <h2 class="card-title-sm">Modelo Matemático</h2>
+        <div class="math-display">
+          $$R(t) = 10 + 5\sin\left(\frac{\pi t}{4}\right) + e^{0.15t} \quad;\quad D = \int_0^{12} R(t)\,dt$$
+        </div>
+        <div class="problem-meta">
+          <span><strong>Intervalo:</strong> $t \in [0, 12]\text{ s}$</span>
+          <span><strong>Tasa $R(t)$:</strong> Mbps</span>
+          <span><strong>Volumen $D$:</strong> Mb (Megabits)</span>
+          <span><strong>Método:</strong> Trapecio Compuesto</span>
+        </div>
+      </section>
+
+      <!-- Tarjeta 2: Formulario de Entrada y Parámetros -->
+      <section class="card" aria-label="Control de cálculo">
+        <form id="formCalculo" class="form-section" novalidate>
+          <label for="inputN" class="input-label">Número de subintervalos ($n$)</label>
+          <div class="input-group">
+            <input 
+              type="text" 
+              id="inputN" 
+              name="n"
+              class="input-field" 
+              value="4" 
+              placeholder="Ej. 4, 10, 50..." 
+              autocomplete="off" 
+              inputmode="numeric"
+              aria-describedby="errorMsg hintMsg"
+            >
+            <button type="submit" id="btnCalcular" class="btn-primary">Calcular</button>
+          </div>
+          <div id="errorMsg" class="form-error" role="alert"></div>
+          <p id="hintMsg" class="form-hint">Ingresa un número entero positivo entre 1 y 100000. Presiona Enter o haz clic en Calcular.</p>
+        </form>
+      </section>
+
+      <!-- Tarjeta 3: Resultado Principal -->
+      <section class="card result-card" aria-live="polite" aria-label="Resultado del cálculo">
+        <div class="result-header">
+          <span class="result-tag">Total estimado transferido</span>
+          <span id="calculoIndicadorN" class="meta-label">Para $n = 4$</span>
+        </div>
+        
+        <div class="result-main">
+          <span id="valorResultado" class="result-value">160.443697</span>
+          <span class="result-unit">Mb</span>
+        </div>
+
+        <div class="result-meta-grid">
+          <div class="meta-item">
+            <span class="meta-label">Paso ($h$)</span>
+            <span id="metaPaso" class="meta-value">3 s</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Porcentaje de Error ($E_{\%}$)</span>
+            <span id="metaErrorPct" class="meta-value accent">3.577604 %</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Error Absoluto Real ($E_{\text{abs}}$)</span>
+            <span id="metaErrorAbs" class="meta-value">5.953015 Mb</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Referencia Analítica ($D_{\text{ref}}$)</span>
+            <span id="metaReferencia" class="meta-value">166.396712 Mb</span>
+          </div>
+        </div>
+
+        <div id="warningBanner" class="warning-banner" role="status">
+          Nota: El resultado mostrado corresponde al último cálculo válido.
+        </div>
+      </section>
+
+      <!-- Tarjeta 4: Desplegable de Procedimiento -->
+      <details id="desplegableProcedimiento" class="details-toggle">
+        <summary class="details-summary">
+          <span>▸ Ver procedimiento detallado</span>
+          <span class="summary-indicator">▶</span>
+        </summary>
+        <div class="details-body">
+          <!-- Paso 1: h -->
+          <div class="step-block">
+            <h3 class="step-title">1. Cálculo del paso ($h$)</h3>
+            <div id="procPaso" class="math-box"></div>
+          </div>
+
+          <!-- Paso 2: Fórmula y sustitución -->
+          <div class="step-block">
+            <h3 class="step-title">2. Fórmula y sustitución numérica</h3>
+            <div id="procSustitucion" class="math-box"></div>
+          </div>
+
+          <!-- Paso 3: Tabla de Nodos -->
+          <div class="step-block">
+            <h3 class="step-title">3. Tabla de nodos de evaluación</h3>
+            <p id="nodoAclaracion" class="table-footnote" style="margin-bottom: 0.5rem; display: none;"></p>
+            <div class="table-wrapper">
+              <table class="data-table" id="tablaNodos">
+                <thead>
+                  <tr>
+                    <th class="num-cell">$i$</th>
+                    <th class="num-cell">$t_i\text{ (s)}$</th>
+                    <th class="num-cell">$R(t_i)\text{ (Mbps)}$</th>
+                    <th class="num-cell">Peso ($w_i$)</th>
+                    <th class="num-cell">$w_i \cdot R(t_i)$</th>
+                  </tr>
+                </thead>
+                <tbody id="cuerpoTablaNodos">
+                  <!-- Filas inyectadas por app.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Tarjeta 5: Tabla de Convergencia -->
+      <section class="card" aria-label="Análisis de convergencia">
+        <div class="section-header">
+          <h2 class="section-title">Análisis de Convergencia</h2>
+          <p class="section-desc">
+            Comparación obligatoria para $n \in \{4, 10, 50, 100, 1000\}$ respecto al valor analítico exacto ($D_{\text{ref}} \approx 166.396712\text{ Mb}$).
+          </p>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="data-table" id="tablaConvergencia">
+            <thead>
+              <tr>
+                <th class="num-cell">$n$</th>
+                <th class="num-cell">$h\text{ (s)}$</th>
+                <th class="num-cell">Estimación $T_n\text{ (Mb)}$</th>
+                <th class="num-cell">Error Absoluto $E_{\text{abs}}\text{ (Mb)}$</th>
+                <th class="num-cell">Error $E_{\%}\text{ (\%)}$</th>
+              </tr>
+            </thead>
+            <tbody id="cuerpoTablaConvergencia">
+              <!-- Filas inyectadas por app.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="convergence-insight">
+          <strong>Propiedad del Método:</strong> A medida que el número de subintervalos $n$ aumenta y el paso $h$ disminuye, el error global del trapecio decrece con orden cuadrático $\mathcal{O}(h^2)$, convergiendo hacia el valor exacto de la integral.
+        </div>
+      </section>
+
+      <!-- Tarjeta 6: Fundamento Teórico y Deducción Analítica -->
+      <section class="card" aria-label="Fundamentación analítica">
+        <h2 class="card-title-sm">Deducción de la Referencia Analítica Exacta</h2>
+        <div class="math-box">
+          $$\int_0^{12} \left[ 10 + 5\sin\left(\frac{\pi t}{4}\right) + e^{0.15t} \right] dt = \left[ 10t - \frac{20}{\pi}\cos\left(\frac{\pi t}{4}\right) + \frac{e^{0.15t}}{0.15} \right]_0^{12}$$
+          $$\begin{aligned}
+          F(12) &= 10(12) - \frac{20}{\pi}\cos(3\pi) + \frac{e^{0.15(12)}}{0.15} = 120 + \frac{20}{\pi} + \frac{e^{1.8}}{0.15} \\
+          F(0) &= 10(0) - \frac{20}{\pi}\cos(0) + \frac{e^0}{0.15} = -\frac{20}{\pi} + \frac{1}{0.15} \\
+          D_{\text{ref}} &= F(12) - F(0) = 120 + \frac{40}{\pi} + \frac{e^{1.8} - 1}{0.15} \approx 166.396712\text{ Mb}
+          \end{aligned}$$
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>Actividad Académica · Métodos Numéricos · Implementación de Software (Parte 2)</p>
+    </footer>
+  </div>
+
+  <!-- Scripts: calculos.js primero, luego app.js con defer -->
+  <script src="calculos.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
